@@ -1,2 +1,4 @@
-# FortOptimum
+FortOptimum
+===========
+
 Automated Fortran Performance Optimizer
