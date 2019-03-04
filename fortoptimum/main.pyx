@@ -28,9 +28,9 @@ clawfc@text = /Users/youngsun/opt/claw/1.2.1/bin/clawfc
 
 [config@cheyenne_login]
 
-fparser@text = /Users/youngsun/repos/github/perftasks/fortran/parser/fparser2/fparser2_task.py
-optdiscover@text = /Users/youngsun/repos/github/FortOptimum/fortoptimum/discover.py
-clawfc@text = /Users/youngsun/opt/claw/1.2.1/bin/clawfc
+fparser@text = /gpfs/u/home/youngsun/repos/github/perftasks/fortran/parser/fparser2/fparser2_task.py
+optdiscover@text = /gpfs/u/home/youngsun/repos/github/FortOptimum/fortoptimum/discover.py
+clawfc@text = /glade/p/cisl/asap/youngsun/opt/claw/02252019/bin/clawfc
 
 [main]
 

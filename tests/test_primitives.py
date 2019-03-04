@@ -1,13 +1,16 @@
 
 import sys
+import os
 import unittest
 import fortoptimum
+
+here = os.path.dirname(__file__)
 
 class PrimitiveOptTests(unittest.TestCase):
 
     def setUp(self):
 
-        self.srcdir = "/Users/youngsun/repos/github/FortOptimum/tests/src"
+        self.srcdir = os.path.join(here, "src")
         self.target = "%s/dg_kernel.F90"%self.srcdir
         pass
 
