@@ -1,3 +1,13 @@
+
+# TODO: combine command inputs with compiler option space
+
+targets@arg = "targets", nargs="+", help="source files"
+cleancmd@arg = "-c", "--clean", required=True, help="command to clean"
+buildcmd@arg = "-b", "--build", required=True, help="command to build"
+executecmd@arg = "-e", "--execute", required=True, help="command to execute"
+workdir@arg = "-d", "--workdir", help="working directory"
+recovercmd@arg = "-r", "--recover", help="command to recover"
+
 import sys
 import os
 import tempfile
@@ -6,16 +16,8 @@ import seqgentools as seq
 import space
 import execute
 import transform
+import measure
 import platform
-
-# TODO: combine command inputs with compiler option space
-
-targets@arg = "targets", nargs="+", help="source files"
-cleancmd@arg = "-c", "--clean", required=True, help="command to clean"
-buildcmd@arg = "-b", "--build", required=True, help="command to build"
-executecmd@arg = "-e", "--execute", required=True, help="command to execute"
-recovercmd@arg = "-r", "--recover", required=True, help="command to recover"
-workdir@arg = "-d", "--workdir", required=True, help="working directory"
 
 macpro = platform.node() == "cisl-blaine.scd.ucar.edu"
 cheyenne_login = platform.node().startswith("cheyenne")
@@ -86,19 +88,38 @@ xformspace = space.XformSpace(*xforms)
 searchspace = space.SearchSpace(xformspace, envs, copts, lopts, ropts)
 
 # get reference case
-refcase@py = execute.execute_case("${cleancmd:arg}", "${buildcmd:arg}", "${executecmd:arg}", "${recovercmd:arg}", "${workdir:arg}", *[[]]*4)
+self.parent.send_websocket("dgkernel", "refcase", "REF")
+self.parent.send_websocket("dgkernel", "refsrc", srcprog)
+refcase@py = execute.execute_case("${cleancmd:arg}", "${buildcmd:arg}", "${executecmd:arg}", "${workdir:arg}", *[[]]*4, recover=${recovercmd:arg})
+self.parent.send_websocket("dgkernel", "refout", refcase)
+refdata = measure.dgkernel(refcase)
+self.parent.send_websocket("dgkernel", "refmeasure", refdata)
 
 # run optimization
 try:
-    continued = True
-    while continued:
+
+    # TODO: update web browser
+    finished = False
+    while not finished:
         nextcase = next(searchspace)
-        transform.claw_xform(clawfc, temp, srcprog, nextcase[0])
-        curcase@py = execute.execute_case("${cleancmd:arg}", "${buildcmd:arg}", "${executecmd:arg}", "${recovercmd:arg}", "${workdir:arg}", *nextcase[1:])
+        self.parent.send_websocket("dgkernel", "case", "CASE")
+        modified@py = transform.claw_xform(clawfc, temp, "${workdir:arg}", srcprog, nextcase[0])
+        self.parent.send_websocket("dgkernel", "src", modified)
+        curcase@py = execute.execute_case("${cleancmd:arg}", "${buildcmd:arg}", "${executecmd:arg}", "${workdir:arg}", *nextcase[1:], recover=${recovercmd:arg})
+        self.parent.send_websocket("dgkernel", "out", curcase)
+        curdata = measure.dgkernel(curcase)
+        self.parent.send_websocket("dgkernel", "measure", curdata)
         transform.recover(temp, srcprog, nextcase[0])
-        continued = execute.check_continue(curcase)
+        finished = measure.check_continue(refdata, curdata)
+
 except Exception as err:
     print(err)
+
+for target in targets:
+    orgfile = "%s.org"%target
+    if os.path.isfile(orgfile):
+        os.remove(path)
+        shutil.copyfile(orgfile, path)
 
 import pdb; pdb.set_trace()
 # report result

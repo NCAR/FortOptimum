@@ -6,15 +6,16 @@ import os
 
 from util import run_shcmd
 
-def execute_case(cleancmd, buildcmd, executecmd, recovercmd, workdir, envs, copts, lopts, ropts):
+def execute_case(cleancmd, buildcmd, executecmd, workdir, envs, copts, lopts, ropts, recover=None):
 
     # TODO: clean opts and run opts?
 
     # clean
-    #ret, stdout, stderr = run_shcmd(cleancmd, shell=True, env=environ)
     stdout, stderr, retcode = run_shcmd(cleancmd, shell=True, cwd=workdir)
+    if retcode != 0:
+        return False, stdout, stderr
 
-    # build
+    # construct build options
     opts = []
 
     for copt in copts:
@@ -32,18 +33,21 @@ def execute_case(cleancmd, buildcmd, executecmd, recovercmd, workdir, envs, copt
     for env in envs:
         import pdb; pdb.set_trace()
 
+    # build
     stdout, stderr, retcode = run_shcmd(buildcmd, shell=True, env=environ, cwd=workdir)
-
+    if retcode != 0:
+        return False, stdout, stderr
 
     # run
     #ret, stdout, stderr = run_shcmd(executecmd, shell=True, env=environ)
-    stdout, stderr, retcode = run_shcmd(executecmd, shell=True, cwd=workdir)
-
-    # collect result
+    runout, runerr, retcode = run_shcmd(executecmd, shell=True, cwd=workdir)
+    if retcode != 0:
+        return False, stdout, stderr
 
     # recover
-    stdout, stderr, retcode = run_shcmd(recovercmd, shell=True, cwd=workdir)
+    if recover:
+        stdout, stderr, retcode = run_shcmd(recover, shell=True, cwd=workdir)
+        if retcode != 0:
+            return False, stdout, stderr
 
-def check_continue(case):
-
-    return False
+    return True, runout, runerr

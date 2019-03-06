@@ -52,8 +52,8 @@ def anno_interchange(dostmt):
         varnames = []
         # get loop variables
         for doloop in doloops:
-            dostmt = select_subnode(doloop, nodeclass=do_stmts, num_subnode=1)
-            loopctrl = dostmt.items[1]
+            stmt = select_subnode(doloop, nodeclass=do_stmts, num_subnode=1)
+            loopctrl = stmt.items[1]
             name = loopctrl.items[1][0].string
             varnames.append(name)
 

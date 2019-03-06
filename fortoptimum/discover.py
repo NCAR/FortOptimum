@@ -76,3 +76,7 @@ class OptDiscoverTask(pyloco.PylocoTask):
     def xform_Write_Stmt(self, node):
         pass
 
+    def xform_Call_Stmt(self, node):
+        # TODO: for testing only
+        pass
+

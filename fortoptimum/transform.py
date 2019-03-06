@@ -3,15 +3,17 @@
 from __future__ import unicode_literals, print_function
 
 import os
+import shutil
 
 from util import run_shcmd
 
-def claw_xform(clawfc, tempdir, srcs, xforms):
+def claw_xform(clawfc, tempdir, workdir, srcs, xforms):
 
     annotations = {}
 
     # generate source
     for xform in xforms:
+
         if xform:
 
             xformer = xform[0]
@@ -38,37 +40,45 @@ def claw_xform(clawfc, tempdir, srcs, xforms):
             else:
                 locs[loc] = [anno]
 
+    clawtemp = os.path.join(tempdir, "clawxform")
+    if os.path.isdir(clawtemp):
+        shutil.rmtree(clawtemp)
+    os.makedirs(clawtemp)
+
     modified = {}
+    idx = 0
 
     for path, src in srcs.items():
+
         if path in annotations:
+
             lines = []
             for num, line in enumerate(src.split("\n")):
                 if num in annotations[path]:
                     lines.extend(annotations[path][num])
                 lines.append(line)
-            with open(path, 'w') as fw:
+
+            orgfile = "%s.org"%path
+            if not os.path.isfile(orgfile):
+                shutil.copyfile(path, orgfile)
+
+            tempfile = os.path.join(clawtemp, "c%d.f90"%idx)
+            with open(tempfile, 'w') as fw:
                 fw.write("\n".join(lines))
-        else:
-            with open(path, 'w') as fw:
-                fw.write(src)
 
-    clawxformdir = os.path.join(tempdir, "clawxforms")
-    os.makedirs(clawxformdir)
+            clawcmd = "%s -o %s -d=claw -t=cpu %s"%(clawfc, path, tempfile)
+            stdout, stderr, retcode = run_shcmd(clawcmd, shell=True, cwd=workdir)
 
-    import pdb; pdb.set_trace()
-    # construct command line arguments
-    for idx, path in enumerate(anntations):
-        ret, stdout, stderr = run_shcmd("claw....... -o tempdir...")
-        if ret != 0:
-            pass
+            modified[path] = lines
+            idx += 1
 
-    for idx, path in enumerate(anntations):
-        os.delfile
-        os.mvfile
- 
+    return modified
 
 def recover(tempdir, srcs, xforms):
 
-    import pdb; pdb.set_trace()
+    for path, src in srcs.items():
+        orgfile = "%s.org"%path
+        if os.path.isfile(orgfile):
+            os.remove(path)
+            shutil.copyfile(orgfile, path)
 

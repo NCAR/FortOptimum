@@ -109,4 +109,10 @@ def run_shcmd(cmd, input=None, **kwargs):
         print('>> %s' % cmd)
         print('returned non-zero code from shell('+str(ret_code)+')\n OUTPUT: '+str(out)+'\n ERROR: '+str(err)+'\n')
 
+    if type(out) != type(u"A"):
+        out = out.decode("utf-8")
+
+    if type(err) != type(u"A"):
+        err = err.decode("utf-8")
+
     return out, err, proc.returncode
