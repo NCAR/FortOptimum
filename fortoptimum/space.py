@@ -21,6 +21,11 @@ class SearchSpace(seq.Sequence):
     def copy(self, memo={}):
         return SearchSpace(*self.subspaces)
 
+    def __next__(self):
+
+        idx = self._iter_index
+        val = super(SearchSpace, self).__next__()
+        return idx, val
 
 class KeywordSpace(seq.Sequence):
 
@@ -28,10 +33,13 @@ class KeywordSpace(seq.Sequence):
 
         self._kopts = kopts
 
-        self._keys = kopts.keys()
-
-        _values = kopts.values()
-        self._kwdspace = seq.Product(_values)
+        if len(kopts) == 0:
+            self._kwdspace = seq.Wrapper([[]])
+            self._keys = [None]
+        else:
+            self._keys = kopts.keys()
+            _values = kopts.values()
+            self._kwdspace = seq.Product(*_values)
 
     def getitem(self, index):
 
@@ -39,7 +47,10 @@ class KeywordSpace(seq.Sequence):
         item = []
 
         for k, v in zip(self._keys, elem):
-            item.append((k,v))
+            if k:
+                item.append(str(k) + "=" + str(v))
+            else:
+                item.append(v)
 
         return item
  
@@ -56,12 +67,16 @@ class CommandLineSpace(seq.Sequence):
         self._vopts = vopts
         self._kopts = kopts
 
-        _voptspace = seq.Product(vopts)
+        if len(vopts) == 0:
+            vopts = [[]]
+
+        _voptspace = seq.Product(*vopts)
         _koptspace = KeywordSpace(kopts)
 
         self._optspace = seq.Product(_voptspace, _koptspace)
         if self._optspace.length() == 0:
             self._optspace = seq.Wrapper([[]])
+
 
     def getitem(self, index):
         return self._optspace[index]

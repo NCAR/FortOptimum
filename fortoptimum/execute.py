@@ -6,7 +6,14 @@ import os
 
 from util import run_shcmd
 
-def execute_case(cleancmd, buildcmd, executecmd, workdir, envs, copts, lopts, ropts, recover=None):
+def _flatten(opts, bag):
+    if isinstance(opts, (list, tuple)):
+        for opt in opts:
+            _flatten(opt, bag)
+    else:
+        bag.append(opts)
+
+def execute_case(self, cleancmd, buildcmd, executecmd, workdir, envs, copts, lopts, ropts, recover=None):
 
     # TODO: clean opts and run opts?
 
@@ -19,27 +26,38 @@ def execute_case(cleancmd, buildcmd, executecmd, workdir, envs, copts, lopts, ro
     opts = []
 
     for copt in copts:
-        import pdb; pdb.set_trace()
+        bag = []
+        _flatten(copt, bag)
+        opts.extend(bag)
 
     for lopt in lopts:
-        import pdb; pdb.set_trace()
+        bag = []
+        _flatten(lopt, bag)
+        opts.extend(bag)
+
+    cfgs = []
 
     for ropt in ropts:
-        import pdb; pdb.set_trace()
+        bag = []
+        _flatten(ropt, bag)
+        cfgs.extend(bag)
 
     environ = dict(os.environ)
-    environ["COMPOPTS"] = " ".join(opts)
+    #environ["COMPOPTS"] = " ".join(opts)
 
     for env in envs:
         import pdb; pdb.set_trace()
 
     # build
-    stdout, stderr, retcode = run_shcmd(buildcmd, shell=True, env=environ, cwd=workdir)
+    bcmd = buildcmd + " " + " ".join(opts)
+    self.parent.send_websocket("dgkernel", "buildopts", bcmd)
+    stdout, stderr, retcode = run_shcmd(bcmd, shell=True, env=environ, cwd=workdir)
     if retcode != 0:
         return False, stdout, stderr
 
     # run
-    #ret, stdout, stderr = run_shcmd(executecmd, shell=True, env=environ)
+    rcfg = executecmd + " " + " ".join(cfgs)
+    self.parent.send_websocket("dgkernel", "runcfgs", rcfg)
     runout, runerr, retcode = run_shcmd(executecmd, shell=True, cwd=workdir)
     if retcode != 0:
         return False, stdout, stderr

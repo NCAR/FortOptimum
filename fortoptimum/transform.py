@@ -69,7 +69,7 @@ def claw_xform(clawfc, tempdir, workdir, srcs, xforms):
             clawcmd = "%s -o %s -d=claw -t=cpu %s"%(clawfc, path, tempfile)
             stdout, stderr, retcode = run_shcmd(clawcmd, shell=True, cwd=workdir)
 
-            modified[path] = lines
+            modified[path] = "\n".join(lines)
             idx += 1
 
     return modified

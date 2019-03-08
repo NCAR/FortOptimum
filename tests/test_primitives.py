@@ -21,9 +21,11 @@ class PrimitiveOptTests(unittest.TestCase):
 
         from fortoptimum import api
 
+            #"-b", "gfortran ${COMPOPTS} %s -o dgkernel.exe"%self.target,
+
         sys.argv = [ self.target,
             "-c", "'rm' -f *.o dgkernel.exe",
-            "-b", "gfortran ${COMPOPTS} %s -o dgkernel.exe"%self.target,
+            "-b", "gfortran %s -o dgkernel.exe"%self.target,
             "-e", "./dgkernel.exe",
             "-d", self.srcdir,
             "--webapp", "fortoptimum/html/dgkernel"

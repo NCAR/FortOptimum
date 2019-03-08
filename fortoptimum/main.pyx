@@ -19,7 +19,9 @@ import transform
 import measure
 import platform
 
-macpro = platform.node() == "cisl-blaine.scd.ucar.edu"
+#macpro = platform.node() == "cisl-blaine.scd.ucar.edu"
+#macpro = platform.node() == "cisl-blaine.wlclient.ucar.edu"
+macpro = platform.node().startswith("cisl-blaine")
 cheyenne_login = platform.node().startswith("cheyenne")
 
 [config@macpro]
@@ -62,10 +64,34 @@ for target in targets:
     astlist.update(parsed['astlist'])
     srcprog.update(parsed['srcprog'])
 
-# configure searching
+# environment variable space
 envs = space.EnvVarSpace()
-copts = space.CompOptSpace()
+
+#-fgcse-after-reload 
+#-finline-functions 
+#-fipa-cp-clone
+#-floop-interchange 
+#-floop-unroll-and-jam 
+#-fpeel-loops 
+#-fpredictive-commoning 
+#-fsplit-paths 
+#-ftree-loop-distribute-patterns 
+#-ftree-loop-distribution 
+#-ftree-loop-vectorize 
+#-ftree-partial-pre 
+#-ftree-slp-vectorize 
+#-funswitch-loops 
+#-fvect-cost-model 
+#-fversion-loops-for-strides
+
+# compiler option space
+optflags = seq.CombinationRange(["-fgcse-after-reload", "-ftree-partial-pre"])
+copts = space.CompOptSpace(["-O2"], optflags)
+
+# linker option space
 lopts = space.LinkOptSpace()
+
+# run configuration space
 ropts = space.ExeEnvSpace()
 
 # - measure performance
@@ -86,11 +112,12 @@ for path, ast in astlist.items():
 xformspace = space.XformSpace(*xforms)
 
 searchspace = space.SearchSpace(xformspace, envs, copts, lopts, ropts)
+ss_size = [searchspace.length()] + [ss.length() for ss in searchspace.subspaces]
+self.parent.send_websocket("dgkernel", "searchspace", tuple(ss_size))
 
 # get reference case
-self.parent.send_websocket("dgkernel", "refcase", "REF")
 self.parent.send_websocket("dgkernel", "refsrc", srcprog)
-refcase@py = execute.execute_case("${cleancmd:arg}", "${buildcmd:arg}", "${executecmd:arg}", "${workdir:arg}", *[[]]*4, recover=${recovercmd:arg})
+refcase@py = execute.execute_case(self, "${cleancmd:arg}", "${buildcmd:arg}", "${executecmd:arg}", "${workdir:arg}", [], ["-O2"], [], [], recover=${recovercmd:arg})
 self.parent.send_websocket("dgkernel", "refout", refcase)
 refdata = measure.dgkernel(refcase)
 self.parent.send_websocket("dgkernel", "refmeasure", refdata)
@@ -98,19 +125,23 @@ self.parent.send_websocket("dgkernel", "refmeasure", refdata)
 # run optimization
 try:
 
-    # TODO: update web browser
+    visited = 0
     finished = False
     while not finished:
-        nextcase = next(searchspace)
-        self.parent.send_websocket("dgkernel", "case", "CASE")
-        modified@py = transform.claw_xform(clawfc, temp, "${workdir:arg}", srcprog, nextcase[0])
+        caseindex, newcase = next(searchspace)
+        #caseinfo = {"caseindex": caseindex}
+        #self.parent.send_websocket("dgkernel", "newcase", caseinfo)
+        self.parent.send_websocket("dgkernel", "nextcase", {"algorithm": "sequencial", "params": {"nextindex": caseindex}})
+        modified@py = transform.claw_xform(clawfc, temp, "${workdir:arg}", srcprog, newcase[0])
         self.parent.send_websocket("dgkernel", "src", modified)
-        curcase@py = execute.execute_case("${cleancmd:arg}", "${buildcmd:arg}", "${executecmd:arg}", "${workdir:arg}", *nextcase[1:], recover=${recovercmd:arg})
+        curcase@py = execute.execute_case(self, "${cleancmd:arg}", "${buildcmd:arg}", "${executecmd:arg}", "${workdir:arg}", *newcase[1:], recover=${recovercmd:arg})
         self.parent.send_websocket("dgkernel", "out", curcase)
         curdata = measure.dgkernel(curcase)
         self.parent.send_websocket("dgkernel", "measure", curdata)
-        transform.recover(temp, srcprog, nextcase[0])
+        transform.recover(temp, srcprog, newcase[0])
         finished = measure.check_continue(refdata, curdata)
+
+        visited += 1
 
 except Exception as err:
     print(err)
@@ -121,5 +152,5 @@ for target in targets:
         os.remove(path)
         shutil.copyfile(orgfile, path)
 
-import pdb; pdb.set_trace()
+#import pdb; pdb.set_trace()
 # report result
