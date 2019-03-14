@@ -165,7 +165,6 @@ pyloco.onMessage("dgkernel", "nextcase", function messageHandler (msgId, ts, msg
             algoparams = algoparams.concat(param + " = " + msg["params"][param]);
         }
     }
-
     updateNextcase();
 
 });
@@ -212,6 +211,7 @@ pyloco.onMessage("dgkernel", "measure", function messageHandler (msgId, ts, msg)
 
     completed = completed + 1;
     updateStatus();
+    window.console.log(measure)
     updateBarChart();
 
     //window.console.log(measures);
