@@ -4,10 +4,11 @@ pyloco.loadJavascript("https://cdnjs.cloudflare.com/ajax/libs/d3/4.13.0/d3.min.j
 
 hljs.initHighlightingOnLoad();
 
-var casenumber = null, totalsize = null, completed = 0
-var refsrc = null, refout = null, refmeasure = null
-var maxetime = 100
-var algorithm = "Undefined", algoparams="Not specified"
+var casenumber = null, totalsize = null, completed = 0;
+var refsrc = null, refout = null, refmeasure = null;
+var maxetime = 100;
+var algorithm = "Undefined", algoparams="Not specified";
+var cursrc = null;
 
 const measures = [
 ];
@@ -211,7 +212,7 @@ pyloco.onMessage("dgkernel", "measure", function messageHandler (msgId, ts, msg)
 
     completed = completed + 1;
     updateStatus();
-    window.console.log(measure)
+    //window.console.log(measure)
     updateBarChart();
 
     //window.console.log(measures);
@@ -292,12 +293,12 @@ function updateBarChart() {
     const makeYLines = () => d3.axisLeft()
       .scale(yScale)
 
-    chart.append('g')
-      .attr('transform', `translate(0, ${height})`)
-      .call(d3.axisBottom(xScale));
+    //chart.append('g')
+    //  .attr('transform', `translate(0, ${height})`)
+    //  .call(d3.axisBottom(xScale));
 
-    chart.append('g')
-      .call(d3.axisLeft(yScale));
+    //chart.append('g')
+    //  .call(d3.axisLeft(yScale));
 
     // vertical grid lines
      chart.append('g')
@@ -305,8 +306,16 @@ function updateBarChart() {
        .attr('transform', `translate(0, ${height})`)
        .call(makeXLines()
          .tickSize(-height, 0, 0)
-         .tickFormat('')
+         .tickFormat( (d,i) => {
+            idx = Math.floor(measures.length / 20) + 1;
+            if (i % idx == 0) {
+                return i;
+            } else {
+                return null;
+            }
+         })
        )
+         // .tickFormat('')
 
     chart.append('g')
       .attr('class', 'grid')
@@ -357,7 +366,7 @@ function updateBarChart() {
           .attr('text-anchor', 'middle')
           .text((a, idx) => {
               //return a.etime.toFixed(2).toString();
-              return idx == i ? a.etime.toFixed(2).toString() : '';
+              return idx == i ? a.etime.toFixed(2).toString() + " @ case " + idx : '';
           })
 
       })

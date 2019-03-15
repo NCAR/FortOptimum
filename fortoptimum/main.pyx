@@ -67,26 +67,32 @@ for target in targets:
 # environment variable space
 envs = space.EnvVarSpace()
 
-#-fgcse-after-reload 
-#-finline-functions 
-#-fipa-cp-clone
-#-floop-interchange 
-#-floop-unroll-and-jam 
-#-fpeel-loops 
-#-fpredictive-commoning 
-#-fsplit-paths 
-#-ftree-loop-distribute-patterns 
-#-ftree-loop-distribution 
-#-ftree-loop-vectorize 
-#-ftree-partial-pre 
-#-ftree-slp-vectorize 
-#-funswitch-loops 
-#-fvect-cost-model 
-#-fversion-loops-for-strides
+gfrotran_flags_demo = ["-fgcse-after-reload", "-ftree-partial-pre"]
+gfrotran_flags_O3 = [ "-fgcse-after-reload ",
+"-finline-functions ",
+"-fipa-cp-clone",
+"-floop-interchange ",
+"-floop-unroll-and-jam ",
+"-fpeel-loops ",
+"-fpredictive-commoning ",
+"-fsplit-paths ",
+"-ftree-loop-distribute-patterns ",
+"-ftree-loop-distribution ",
+"-ftree-loop-vectorize ",
+"-ftree-partial-pre ",
+"-ftree-slp-vectorize ",
+"-funswitch-loops ",
+"-fvect-cost-model ",
+"-fversion-loops-for-strides"]
+gfortran_flags_Ofast = [ "-ffast-math",
+"-fstack-arrays",
+"-fno-protect-parens"]
 
 # compiler option space
-optflags = seq.CombinationRange(["-fgcse-after-reload", "-ftree-partial-pre"])
-copts = space.CompOptSpace(["-O2"], optflags)
+#optflags = seq.CombinationRange(["-fgcse-after-reload", "-ftree-partial-pre"])
+optflags = seq.CombinationRange(gfortran_flags_Ofast)
+
+copts = space.CompOptSpace(["-O3"], optflags)
 
 # linker option space
 lopts = space.LinkOptSpace()
@@ -117,7 +123,7 @@ self.parent.send_websocket("dgkernel", "searchspace", tuple(ss_size))
 
 # get reference case
 self.parent.send_websocket("dgkernel", "refsrc", srcprog)
-refcase@py = execute.execute_case(self, "${cleancmd:arg}", "${buildcmd:arg}", "${executecmd:arg}", "${workdir:arg}", [], ["-O2"], [], [], recover=${recovercmd:arg})
+refcase@py = execute.execute_case(self, "${cleancmd:arg}", "${buildcmd:arg}", "${executecmd:arg}", "${workdir:arg}", [], ["-O3"], [], [], recover=${recovercmd:arg})
 self.parent.send_websocket("dgkernel", "refout", refcase)
 refdata = measure.dgkernel(refcase)
 self.parent.send_websocket("dgkernel", "refmeasure", refdata)

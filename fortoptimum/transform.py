@@ -20,6 +20,7 @@ def claw_xform(clawfc, tempdir, workdir, srcs, xforms):
             xformargs = xform[1]
             stmt = xformer._node
             item = stmt.item
+
             srcfile = item.reader.id
 
             if srcfile not in annotations:

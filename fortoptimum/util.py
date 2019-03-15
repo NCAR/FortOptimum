@@ -69,6 +69,23 @@ def collect_tightly_nested_loops(doconst, bag=None):
     return bag
 
 
+def collect_next_sibling_loops(doconst):
+
+    upper_node = doconst.parent
+
+    bag = []
+
+    located = False
+
+    for child in upper_node.content:
+        if located:
+            if isinstance(child, do_constructs):
+                bag.append(child)
+        elif child is doconst:
+            located = True
+
+    return bag
+
 def select_subnode(node, num_subnode=None, nodeclass=None, selector=None, subnode_attr="content"):
 
     subnodes = getattr(node, subnode_attr, [])

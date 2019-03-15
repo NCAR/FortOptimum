@@ -9,7 +9,8 @@ import seqgentools as seq
 #from fparser.two.utils import FortranSyntaxError
 #from fparser.common.readfortran import FortranFileReader, FortranStringReader
 
-from util import collect_tightly_nested_loops, select_subnode, do_stmts
+from util import (collect_tightly_nested_loops, select_subnode, do_stmts,
+        collect_next_sibling_loops)
 
 class ClawAnnotation(seq.Sequence):
 
@@ -60,9 +61,49 @@ def anno_interchange(dostmt):
         # generate permutations
         return ClawLoopInterchange(dostmt, varnames)
 
+class ClawLoopFusion(ClawAnnotation):
+
+    def __init__(self, prefix, dostmts):
+
+        self._prefix = prefix
+        self._dostmts = dostmts
+        self._stmts = seq.CombinatioinRange(dostmts)
+
+    def getitem(self, index):
+        return (self, ("%s-%d"%(self._prefix, index), self._stmts[index]))
+
+    def length(self):
+        return self._vars.length()
+
+    def copy(self, memo={}):
+        return ClawLoopFusion(self._prefix, self._dostmts)
+
+    def annotate(self, item):
+        group, stmt = item
+        return "!$claw loop-fusion (%s)"%group, 0
+
+def anno_fusion(dostmt):
+
+    doconst = dostmt.parent
+
+    # claw interchange accept tightly nested loops only
+    next_loops = collect_next_sibling_loops(doconst)
+
+    if next_loops:
+
+        do_stmts = []
+
+        for doloop in next_loops:
+            stmt = select_subnode(doloop, nodeclass=do_stmts, num_subnode=1)
+            do_stmts.append(stmt)
+
+        return ClawLoopFusion(prefix, do_stmts)
+
 annotators = [
-    anno_interchange
+    anno_interchange,
 ]
+
+    #anno_fusion,
 
 def annotations(dostmt):
 
