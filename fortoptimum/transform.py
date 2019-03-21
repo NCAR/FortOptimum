@@ -29,17 +29,12 @@ def claw_xform(clawfc, tempdir, workdir, srcs, xforms):
             else:
                 locs = annotations[srcfile]
 
-            anno, pos = xformer.annotate(xformargs)
-            
-            if pos <= 0:
-                loc = item.span[0]+pos-1
-            else:
-                loc = item.span[1]+pos-1
+            for anno, loc in xformer.annotate(xformargs):
 
-            if loc in locs:
-                locs[loc].append(anno)
-            else:
-                locs[loc] = [anno]
+                if loc in locs:
+                    locs[loc].append(anno)
+                else:
+                    locs[loc] = [anno]
 
     clawtemp = os.path.join(tempdir, "clawxform")
     if os.path.isdir(clawtemp):

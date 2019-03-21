@@ -9,6 +9,7 @@ var refsrc = null, refout = null, refmeasure = null;
 var maxetime = 100;
 var algorithm = "Undefined", algoparams="Not specified";
 var cursrc = null;
+var top3 = {first:null, second:null, third:null};
 
 const measures = [
 ];
@@ -32,7 +33,7 @@ var bodyHtml = "" +
 "    <pre><code id='sourcefile' class='Fortran'></code></pre>" +
 "  </div>" +
 "  <div class='handler'></div>" +
-"  <div class='box'>Current Mesurement<br><svg/></div>" +
+"  <div class='box'>Current Measurement<br><svg/></div>" +
 "</div>" +
 "<div><br></div>" +
 "<div class='box'>Selecting Next Optimization<br><br><div id='nextcase'></div></div>"
@@ -82,8 +83,42 @@ document.addEventListener('mouseup', function(e) {
 
 function updateStatus () {
     var status = document.getElementById("status");
+
+    top3msg = "TOP3 cases : "; 
+
+    if (top3.first == null) {
+       top3msg = top3msg.concat("null, ");
+    } else {
+       top3msg = top3msg.concat("<a href='javascript:updateCurrentOpt(\"first\")'>"+top3.first.caseid + "</a>, ");
+    }
+    
+    if (top3.second == null) {
+       top3msg = top3msg.concat("null, ");
+    } else {
+       top3msg = top3msg.concat("<a href='javascript:updateCurrentOpt(\"second\")'>"+top3.second.caseid + "</a>, ");
+    }
+    
+    if (top3.third == null) {
+       top3msg = top3msg.concat("null");
+    } else {
+       top3msg = top3msg.concat("<a href='javascript:updateCurrentOpt(\"third\")'>"+top3.third.caseid + "</a>");
+    }
+
     status.innerHTML = "Experiment Status :  current case = " + casenumber +
-        " (completed " + completed + " / " + totalsize + ")" + iconpoweroff;
+        " (completed " + completed + " / " + totalsize + ", " + top3msg + 
+        ")" + iconpoweroff;
+}
+
+function updateCurrentOpt(caseid) {
+
+    var srcfile = document.getElementById("sourcefile");
+    var opts = document.getElementById("options");
+
+    //window.console.log(top3[caseid]);
+
+    srcfile.innerHTML = top3[caseid].sourcefile;
+    opts.innerHTML = top3[caseid].options;
+
 }
 
 function updateNextcase () {
@@ -201,6 +236,30 @@ pyloco.onMessage("dgkernel", "measure", function messageHandler (msgId, ts, msg)
     } else if (msg[0][0] == refmeasure[0][0] && msg[0][1] == refmeasure[0][1]) {
         cur.etime = msg[1][0];
         cur.color = "blue";
+
+        var srcfile = document.getElementById("sourcefile").innerHTML;
+        var opts = document.getElementById("options").innerHTML;
+        var curcase = {caseid: cur.caseid, etime: cur.etime, options: opts, sourcefile: srcfile};
+
+        if (top3.first == null || cur.etime < top3.first.etime) {
+
+            top3.third = top3.second;
+            top3.second = top3.first;
+            top3.first = curcase;
+
+        } else if (top3.second == null || cur.etime < top3.second.etime) {
+
+            top3.third = top3.second;
+            top3.second = curcase;
+
+        } else if (top3.third == null || cur.etime < top3.third.etime) {
+
+            top3.third = curcase;
+
+        }
+
+        //window.console.log(top3)
+
     } else {
         cur.etime = msg[1][0];
         cur.color = "red";
